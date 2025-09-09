@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Online Quiz Platform</title>
+  <meta name="description" content="A responsive, single-file Online Quiz Platform with categories, timer, results, leaderboard, and question manager." />
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: #121933;
+      --muted: #1a2347;
+      --text: #e8ebff;
+      --subtext: #b9c0ff;
+      --accent: #6d8dff;
+      --accent-2: #00d3a7;
+      --danger: #ff6b6b;
+      --warning: #ffb020;
+      --ok: #10b981;
+      --shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02);
+      --radius-xl: 20px;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 80% -10%, #1b2450 0%, transparent 60%),
+                  radial-gradient(900px 500px at -10% 10%, #13224a 0%, transparent 60%),
+                  var(--bg);
+      color:var(--text); line-height:1.55;
+    }
+    .container{max-width:1100px; margin:0 auto; padding:24px}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; border-radius:var(--radius-xl);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.05)), var(--card); box-shadow: var(--shadow);
+      position:sticky; top:12px; z-index:10; backdrop-filter: blur(6px);
+    }
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{width:40px; height:40px; border-radius:12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow:0 6px 16px rgba(0,0,0,.35)}
+    h1{font-size:20px; margin:0; letter-spacing:.3px}
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap}
+    .btn{
+      appearance:none; border:none; cursor:pointer; font-weight:600; letter-spacing:.2px; padding:10px 14px; border-radius:12px;
+      background: var(--muted); color:var(--text); box-shadow:var(--shadow); transition:.2s transform, .3s background;
+    }
+    .btn:hover{transform: translateY(-1px)}
+    .btn:active{transform: translateY(0)}
+    .btn.primary{background: linear-gradient(135deg, var(--accent), #3a5aff)}
+    .btn.good{background: linear-gradient(135deg, var(--accent-2), #06b890)}
+    .btn.warn{background: linear-gradient(135deg, var(--warning), #ff8a00)}
+    .btn.ghost{background: transparent; border:1px solid #31407d}
+
+    main{display:grid; gap:18px; margin-top:18px}
+    section.card{
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.08)), var(--card);
+      border:1px solid rgba(255,255,255,.06); border-radius: var(--radius-xl); box-shadow: var(--shadow);
+      padding:22px; display:none;
+    }
+    section.card.active{display:block}
+
+    .grid{display:grid; gap:14px}
+    .grid.cols-3{grid-template-columns: repeat(3, minmax(0,1fr))}
+    .grid.cols-2{grid-template-columns: repeat(2, minmax(0,1fr))}
+    @media (max-width: 900px){.grid.cols-3{grid-template-columns:1fr 1fr}}
+    @media (max-width: 640px){.grid.cols-3,.grid.cols-2{grid-template-columns:1fr}}
+
+    .card-sm{
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12)), var(--muted);
+      border:1px solid rgba(255,255,255,.06); border-radius: var(--radius-lg); padding:16px; box-shadow: var(--shadow);
+    }
+
+    .kicker{color:var(--subtext); font-size:12px; letter-spacing:.35em; text-transform:uppercase}
+    .title{font-size:22px; margin:6px 0 8px}
+    .sub{color:var(--subtext)}
+
+    /* Home */
+    .category{display:flex; align-items:flex-start; gap:12px}
+    .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:#24306b; color:#cbd6ff; border:1px solid #394a93}
+
+    /* Quiz view */
+    .progress{
+      height:10px; background:#18214a; border-radius:999px; overflow:hidden; border:1px solid #2c3a78
+    }
+    .progress > span{display:block; height:100%; width:0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s}
+
+    .question{font-size:20px; font-weight:600}
+    .options{display:grid; gap:12px; margin-top:12px}
+    .opt{
+      display:flex; gap:12px; align-items:center; padding:12px 14px; border-radius:14px; cursor:pointer;
+      background:#0f1633; border:1px solid #2a376e; transition:.2s transform, .25s background;
+    }
+    .opt:hover{transform: translateY(-1px)}
+    .opt input{appearance:none; width:18px; height:18px; border:2px solid #5664a9; border-radius:5px; display:grid; place-items:center}
+    .opt input:checked{background:linear-gradient(135deg, var(--accent), var(--accent-2)); border-color:transparent}
+    .opt.correct{background:linear-gradient(0deg, rgba(16,185,129,.18), rgba(16,185,129,.08)); border-color:#1e745a}
+    .opt.wrong{background:linear-gradient(0deg, rgba(255,107,107,.18), rgba(255,107,107,.08)); border-color:#8a3636}
+    .explain{margin-top:10px; color:#cfe7ff}
+
+    .pill{display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px; background:#122258; border:1px solid #334791; font-size:13px}
+
+    /* Results */
+    .score{
+      display:grid; gap:10px; grid-template-columns: repeat(4, minmax(0,1fr));
+    }
+    .score .card-sm{display:flex; flex-direction:column; gap:6px}
+    @media (max-width: 800px){.score{grid-template-columns:1fr 1fr}}
+
+    .leader-row{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px; border-radius:12px; background:#0f1633; border:1px solid #2a376e}
+
+    .footer{opacity:.8; font-size:13px; text-align:center; margin:10px 0}
+    a{color:#a9beff}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Online Quiz Platform</h1>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="btnHome">Home</button>
+        <button class="btn ghost" id="btnManage">Question Manager</button>
+        <button class="btn primary" id="btnLeaderboard">Leaderboard</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- HOME -->
+      <section id="view-home" class="card active" aria-labelledby="home-title">
+        <div class="kicker">Welcome</div>
+        <h2 id="home-title" class="title">Choose a Category & Start</h2>
+        <p class="sub">Pick a quiz category, set your player name, and hit Start. You can also create your own questions in the manager.</p>
+
+        <div class="card-sm" style="margin:14px 0; display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+          <label class="pill" for="playerName">👤 Player Name
+            <input id="playerName" type="text" placeholder="e.g. Subham" style="margin-left:8px; background:transparent; border:none; color:var(--text); outline:none" />
+          </label>
+          <span class="pill" id="totalQInfo">📚 0 Questions loaded</span>
+          <span class="pill" id="timerInfo">⏱ 60s per quiz</span>
+        </div>
+
+        <div class="grid cols-3" id="categoryGrid" aria-live="polite"></div>
+      </section>
+
+      <!-- QUIZ -->
+      <section id="view-quiz" class="card" aria-labelledby="quiz-title">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <div>
+            <div class="kicker">Playing</div>
+            <h3 id="quiz-title" class="title">Category</h3>
+            <p class="sub" id="quiz-sub">Question <span id="qIndex">1</span>/<span id="qTotal">0</span></p>
+          </div>
+          <div class="pill" title="Remaining Time"><span>⏳</span>&nbsp;<strong id="timeLeft">00:00</strong></div>
+        </div>
+
+        <div class="progress" aria-hidden="true" style="margin:14px 0 18px"><span id="progressBar"></span></div>
+
+        <div class="card-sm">
+          <div class="question" id="questionText">…</div>
+          <div class="options" id="options"></div>
+          <div class="explain" id="explain" hidden></div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:14px; gap:10px; flex-wrap:wrap">
+          <button class="btn" id="btnPrev">← Previous</button>
+          <div style="display:flex; gap:10px">
+            <button class="btn ghost" id="btnSkip">Skip</button>
+            <button class="btn primary" id="btnNext">Next →</button>
+            <button class="btn good" id="btnFinish">Finish ✅</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section id="view-results" class="card" aria-labelledby="results-title">
+        <div class="kicker">Results</div>
+        <h3 id="results-title" class="title">Your Performance</h3>
+        <p class="sub" id="results-sub"></p>
+
+        <div class="score" style="margin:14px 0">
+          <div class="card-sm"><div class="kicker">Score</div><div style="font-size:28px" id="rScore">0</div></div>
+          <div class="card-sm"><div class="kicker">Total</div><div style="font-size:28px" id="rTotal">0</div></div>
+          <div class="card-sm"><div class="kicker">Accuracy</div><div style="font-size:28px" id="rPercent">0%</div></div>
+          <div class="card-sm"><div class="kicker">Time Used</div><div style="font-size:28px" id="rTime">0s</div></div>
+        </div>
+
+        <div class="card-sm" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <input id="saveName" placeholder="Name for leaderboard" style="flex:1; min-width:200px; padding:10px 12px; border-radius:12px; border:1px solid #334791; background:#0f1633; color:var(--text)" />
+          <button class="btn good" id="btnSaveScore">Save to Leaderboard</button>
+          <button class="btn" id="btnReview">Review Answers</button>
+          <button class="btn primary" id="btnRetry">Retry Category</button>
+        </div>
+
+        <div id="reviewList" style="margin-top:14px" hidden></div>
+      </section>
+
+      <!-- LEADERBOARD -->
+      <section id="view-leaderboard" class="card" aria-labelledby="leader-title">
+        <div class="kicker">Top Scores</div>
+        <h3 id="leader-title" class="title">Leaderboard</h3>
+        <div id="leaderRows" class="grid cols-2" style="margin-top:12px"></div>
+      </section>
+
+      <!-- MANAGER -->
+      <section id="view-manage" class="card" aria-labelledby="manage-title">
+        <div class="kicker">Create</div>
+        <h3 id="manage-title" class="title">Question Manager</h3>
+        <p class="sub">Add your own questions to any category. They are stored in your browser and merged with the built-ins.</p>
+
+        <form id="formAdd" class="grid cols-2" style="margin-top:12px">
+          <div class="card-sm">
+            <label class="kicker" for="mCategory">Category</label>
+            <select id="mCategory" required style="width:100%; margin-top:8px; padding:10px; border-radius:12px; background:#0f1633; color:var(--text); border:1px solid #334791"></select>
+          </div>
+          <div class="card-sm">
+            <label class="kicker" for="mQuestion">Question</label>
+            <textarea id="mQuestion" required rows="3" style="width:100%; margin-top:8px; padding:10px; border-radius:12px; background:#0f1633; color:var(--text); border:1px solid #334791"></textarea>
+          </div>
+          <div class="card-sm">
+            <label class="kicker">Options (mark the correct one)</label>
+            <div id="mOptions" class="grid" style="margin-top:8px; gap:8px"></div>
+            <button type="button" class="btn ghost" id="btnAddOption" style="margin-top:8px">+ Add Option</button>
+          </div>
+          <div class="card-sm">
+            <label class="kicker" for="mExplain">Explanation (optional)</label>
+            <textarea id="mExplain" rows="3" style="width:100%; margin-top:8px; padding:10px; border-radius:12px; background:#0f1633; color:var(--text); border:1px solid #334791"></textarea>
+          </div>
+          <div style="grid-column:1 / -1; display:flex; gap:10px; justify-content:flex-end">
+            <button class="btn warn" type="button" id="btnClearCustom">Clear My Custom Questions</button>
+            <button class="btn good" type="submit">Save Question</button>
+          </div>
+        </form>
+
+        <div class="card-sm" id="myCustomList" style="margin-top:14px"></div>
+      </section>
+
+      <p class="footer">Built with ♥ — All data stays in your browser (localStorage). Tip: press <strong>Home</strong> to switch categories.</p>
+    </main>
+  </div>
+
+  <script>
+  /***********************\n   * Data & Utilities
+  ************************/
+  const DEFAULT_TIME = 60; // seconds per quiz
+  const STORAGE_KEYS = {
+    CUSTOM: 'oqp_customQuestions_v1',
+    LEADER: 'oqp_leaderboard_v1'
+  };
+
+  const quizData = {
+    "General Knowledge": [
+      { q: "Which planet is known as the Red Planet?", options: ["Venus","Mars","Jupiter","Mercury"], a: 1, exp:"Mars looks red due to iron oxide (rust) on its surface." },
+      { q: "Who wrote 'Panchatantra'?", options: ["Vishnu Sharma","Kalidasa","Valmiki","Vyasa"], a: 0, exp:"Traditionally attributed to Vishnu Sharma." },
+      { q: "Fastest land animal?", options: ["Cheetah","Pronghorn","Lion","Greyhound"], a: 0, exp:"Cheetahs can reach ~100–120 km/h in short bursts." },
+    ],
+    "Computer Science": [
+      { q: "Which data structure uses FIFO?", options:["Stack","Queue","Tree","Graph"], a:1, exp:"Queues remove items in the order they arrive (First-In First-Out)." },
+      { q: "Time complexity of binary search?", options:["O(n)","O(log n)","O(n log n)","O(1)"], a:1, exp:"Each step halves the search space → logarithmic." },
+      { q: "Primary protocol for the web?", options:["FTP","SMTP","HTTP","SSH"], a:2, exp:"HyperText Transfer Protocol underpins the web." },
+    ],
+    "Cybersecurity": [
+      { q: "WannaCry primarily exploited which Windows vuln?", options:["BlueKeep","PrintNightmare","EternalBlue (SMBv1)","BadUSB"], a:2, exp:"It used EternalBlue against SMBv1 (MS17-010)." },
+      { q: "Strongest password below?", options:["Subham123","letmein!","h!R8qZ_9aM%","qwerty2024"], a:2, exp:"Length + randomness + symbols increases entropy." },
+      { q: "2FA stands for…", options:["Two-Factor Auth","Two-Fast Access","Twin Feature Access","Two-Factor Agreement"], a:0, exp:"An extra verification factor beyond a password." },
+    ]
+  };
+
+  // Merge in custom questions from localStorage
+  function loadCustom() {
+    try{
+      const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM);
+      if(!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    }catch{ return {} }
+  }
+
+  function saveCustom(obj){
+    localStorage.setItem(STORAGE_KEYS.CUSTOM, JSON.stringify(obj));
+  }
+
+  function uid(){ return Math.random().toString(36).slice(2,9) }
+
+  function secondsToMMSS(s){
+    s = Math.max(0, s|0);
+    const m = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    return `${m}:${ss}`;
+  }
+
+  function percent(n, d){ return d ? Math.round((n/d)*100) : 0 }
+
+  function getAllQuestionsByCategory(){
+    const custom = loadCustom();
+    const merged = {};
+    for(const cat of Object.keys(quizData)){
+      merged[cat] = [...quizData[cat]];
+      if(custom[cat]) merged[cat] = merged[cat].concat(custom[cat]);
+    }
+    return merged;
+  }
+
+  /***********************\n   * State
+  ************************/
+  const state = {
+    playerName: '',
+    category: null,
+    questions: [],
+    index: 0,
+    selections: [], // index chosen or null
+    score: 0,
+    timeLeft: DEFAULT_TIME,
+    timerId: null,
+    startedAt: null,
+  };
+
+  /***********************\n   * DOM Helpers
+  ************************/
+  const $ = (sel) => document.querySelector(sel);
+  const grid = (sel) => document.querySelector(sel);
+
+  const views = {
+    home: $('#view-home'),
+    quiz: $('#view-quiz'),
+    results: $('#view-results'),
+    manage: $('#view-manage'),
+    leaderboard: $('#view-leaderboard'),
+  };
+
+  function show(view){
+    Object.values(views).forEach(v => v.classList.remove('active'));
+    views[view].classList.add('active');
+  }
+
+  function toast(msg){
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.position='fixed'; el.style.bottom='16px'; el.style.left='50%'; el.style.transform='translateX(-50%)';
+    el.style.background='#0f1633'; el.style.border='1px solid #2a376e'; el.style.padding='10px 14px'; el.style.borderRadius='12px'; el.style.zIndex='50';
+    document.body.appendChild(el);
+    setTimeout(()=> el.remove(), 1800);
+  }
+
+  /***********************\n   * Home & Categories
+  ************************/
+  function renderCategories(){
+    const merged = getAllQuestionsByCategory();
+    const container = $('#categoryGrid');
+    container.innerHTML = '';
+    let total = 0;
+    for(const [cat, items] of Object.entries(merged)){
+      total += items.length;
+      const card = document.createElement('div');
+      card.className = 'card-sm';
+      card.innerHTML = `
+        <div class="category">
+          <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));"></div>
+          <div style="flex:1">
+            <div class="kicker">Category</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+              <div>
+                <div class="title">${cat}</div>
+                <div class="sub">${items.length} questions</div>
+              </div>
+              <button class="btn primary" data-cat="${cat}">Start ▶</button>
+            </div>
+          </div>
+        </div>`;
+      container.appendChild(card);
+    }
+    $('#totalQInfo').textContent = `📚 ${total} Questions loaded`;
+  }
+
+  function startQuiz(category){
+    const merged = getAllQuestionsByCategory();
+    state.playerName = $('#playerName').value.trim() || 'Player';
+    state.category = category;
+    state.questions = [...(merged[category]||[])].map(q => ({...q, id: uid()}));
+    // Shuffle questions & options for fairness
+    shuffle(state.questions);
+    state.questions.forEach(q => {
+      const zipped = q.options.map((opt, i) => ({opt, i}));
+      shuffle(zipped);
+      q.options = zipped.map(z => z.opt);
+      q.a = zipped.findIndex(z => z.i === q.a);
+    });
+    state.index = 0;
+    state.selections = Array(state.questions.length).fill(null);
+    state.score = 0;
+    state.timeLeft = DEFAULT_TIME;
+    state.startedAt = Date.now();
+    clearInterval(state.timerId);
+    state.timerId = setInterval(()=>{
+      state.timeLeft--; updateTimer();
+      if(state.timeLeft <= 0){
+        clearInterval(state.timerId); finishQuiz();
+      }
+    }, 1000);
+    $('#quiz-title').textContent = category;
+    $('#qTotal').textContent = state.questions.length;
+    $('#timeLeft').textContent = secondsToMMSS(state.timeLeft);
+    $('#timerInfo').textContent = `⏱ ${DEFAULT_TIME}s per quiz`;
+    show('quiz');
+    renderQuestion();
+  }
+
+  function updateTimer(){
+    $('#timeLeft').textContent = secondsToMMSS(state.timeLeft);
+  }
+
+  function renderQuestion(){
+    const q = state.questions[state.index];
+    $('#qIndex').textContent = state.index + 1;
+    $('#questionText').textContent = q.q;
+    $('#explain').hidden = true; $('#explain').textContent = q.exp || '';
+    const opts = $('#options');
+    opts.innerHTML = '';
+    q.options.forEach((text, i)=>{
+      const div = document.createElement('label');
+      div.className = 'opt';
+      div.innerHTML = `<input type="checkbox" aria-label="Select option"> <div>${text}</div>`;
+      div.addEventListener('click', (ev)=>{
+        if(ev.target.tagName === 'INPUT') return; // avoid double
+        selectOption(i);
+      });
+      opts.appendChild(div);
+    });
+    // restore selection
+    if(state.selections[state.index] != null){
+      markSelection(state.selections[state.index]);
+    }
+    updateProgress();
+  }
+
+  function selectOption(i){
+    if(state.timeLeft <= 0) return;
+    const q = state.questions[state.index];
+    state.selections[state.index] = i;
+    const correct = i === q.a;
+    if(correct) state.score++;
+    markSelection(i, correct);
+    // Show explanation
+    if(q.exp){
+      $('#explain').hidden = false;
+    }
+  }
+
+  function markSelection(i, correct){
+    const nodes = [...document.querySelectorAll('#options .opt')];
+    nodes.forEach((n, idx)=>{
+      n.classList.remove('correct','wrong');
+      const input = n.querySelector('input');
+      input.checked = idx === i;
+    });
+    const q = state.questions[state.index];
+    if(i != null){
+      nodes[i].classList.add(i === q.a ? 'correct' : 'wrong');
+      nodes[q.a].classList.add('correct');
+    }
+  }
+
+  function next(){
+    if(state.index < state.questions.length-1){
+      state.index++; renderQuestion();
+    } else { finishQuiz(); }
+  }
+  function prev(){ if(state.index>0){ state.index--; renderQuestion(); } }
+  function skip(){ state.selections[state.index] = null; next(); }
+
+  function updateProgress(){
+    const done = state.selections.filter(v=>v!=null).length;
+    const pct = percent(state.index, state.questions.length-1); // visual step
+    $('#progressBar').style.width = `${percent(done, state.questions.length)}%`;
+    $('#quiz-sub').innerHTML = `Question <span id="qIndex">${state.index+1}</span>/<span id="qTotal">${state.questions.length}</span>`;
+  }
+
+  function finishQuiz(){
+    clearInterval(state.timerId);
+    const total = state.questions.length;
+    const used = Math.max(0, DEFAULT_TIME - state.timeLeft);
+    const pct = percent(state.score, total);
+    $('#results-sub').textContent = `${state.playerName} • ${state.category}`;
+    $('#rScore').textContent = state.score;
+    $('#rTotal').textContent = total;
+    $('#rPercent').textContent = pct + '%';
+    $('#rTime').textContent = `${used}s`;
+    $('#saveName').value = state.playerName;
+    buildReview();
+    show('results');
+  }
+
+  function buildReview(){
+    const list = document.createElement('div');
+    state.questions.forEach((q, idx)=>{
+      const sel = state.selections[idx];
+      const item = document.createElement('div');
+      item.className = 'card-sm';
+      const correctness = sel == null ? 'Skipped' : (sel === q.a ? 'Correct' : 'Wrong');
+      const color = sel == null ? '#ffb020' : (sel===q.a ? '#10b981' : '#ff6b6b');
+      item.innerHTML = `
+        <div class="kicker">Question ${idx+1} • <span style="color:${color}">${correctness}</span></div>
+        <div style="font-weight:700; margin:6px 0">${q.q}</div>
+        <ol style="margin:0 0 6px 18px">
+          ${q.options.map((o, i)=>`<li style="margin:4px 0;${i===q.a?'font-weight:700;':''}">${o}${i===q.a?' ✅':''}${sel===i && i!==q.a ? ' ❌':''}</li>`).join('')}
+        </ol>
+        ${q.exp ? `<div class="sub">💡 ${q.exp}</div>`: ''}
+      `;
+      list.appendChild(item);
+    });
+    const container = $('#reviewList');
+    container.innerHTML = ''; container.appendChild(list); container.hidden = true;
+  }
+
+  /***********************\n   * Leaderboard
+  ************************/
+  function loadLeaderboard(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEYS.LEADER) || '[]') }catch{ return [] }
+  }
+  function saveLeaderboard(rows){
+    localStorage.setItem(STORAGE_KEYS.LEADER, JSON.stringify(rows.slice(0, 50)));
+  }
+  function addToLeaderboard(entry){
+    const rows = loadLeaderboard();
+    rows.push(entry);
+    rows.sort((a,b)=> b.percent - a.percent || a.time - b.time);
+    saveLeaderboard(rows);
+  }
+  function renderLeaderboard(){
+    const rows = loadLeaderboard();
+    const wrap = $('#leaderRows');
+    wrap.innerHTML = '';
+    if(rows.length === 0){
+      wrap.innerHTML = '<div class="card-sm">No scores yet. Finish a quiz and save your score!</div>';
+      return;
+    }
+    rows.slice(0, 20).forEach((r, i)=>{
+      const div = document.createElement('div');
+      div.className = 'leader-row';
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px">
+          <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;font-weight:800">${i+1}</div>
+          <div>
+            <div style="font-weight:700">${r.name} • ${r.category}</div>
+            <div class="sub" style="font-size:12px">${new Date(r.date).toLocaleString()} • ${r.time}s</div>
+          </div>
+        </div>
+        <div style="font-weight:800">${r.score}/${r.total} (${r.percent}%)</div>
+      `;
+      wrap.appendChild(div);
+    });
+  }
+
+  /***********************\n   * Manager
+  ************************/
+  function renderManager(){
+    const sel = $('#mCategory');
+    sel.innerHTML = '';
+    Object.keys(quizData).forEach(cat=>{
+      const opt = document.createElement('option');
+      opt.value = cat; opt.textContent = cat; sel.appendChild(opt);
+    });
+
+    // Option fields
+    const mWrap = $('#mOptions');
+    mWrap.innerHTML = '';
+    for(let i=0;i<4;i++) addOptionField();
+
+    renderMyCustomList();
+  }
+
+  function addOptionField(){
+    const idx = $('#mOptions').children.length;
+    const row = document.createElement('div');
+    row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center';
+    row.innerHTML = `
+      <input type="radio" name="mCorrect" aria-label="Mark as correct" style="accent-color:#6d8dff">
+      <input type="text" class="mOptText" placeholder="Option text" style="flex:1; padding:10px 12px; border-radius:10px; background:#0f1633; color:var(--text); border:1px solid #334791">
+      <button type="button" class="btn ghost btnRemoveOpt">Remove</button>
+    `;
+    row.querySelector('.btnRemoveOpt').addEventListener('click', ()=> row.remove());
+    $('#mOptions').appendChild(row);
+  }
+
+  function handleSaveQuestion(ev){
+    ev.preventDefault();
+    const cat = $('#mCategory').value;
+    const question = $('#mQuestion').value.trim();
+    const opts = [...document.querySelectorAll('#mOptions .mOptText')].map(i=>i.value.trim()).filter(Boolean);
+    const correctIdx = [...document.querySelectorAll('#mOptions input[type=radio]')].findIndex(r=>r.checked);
+    const exp = $('#mExplain').value.trim();
+
+    if(!question || opts.length < 2 || correctIdx < 0 || correctIdx >= opts.length){
+      toast('Please enter a question, at least 2 options, and mark the correct one.');
+      return;
+    }
+
+    const custom = loadCustom();
+    custom[cat] = custom[cat] || [];
+    custom[cat].push({ q: question, options: opts, a: correctIdx, exp });
+    saveCustom(custom);
+
+    $('#mQuestion').value=''; $('#mExplain').value=''; $('#mOptions').innerHTML=''; for(let i=0;i<4;i++) addOptionField();
+    renderCategories();
+    renderMyCustomList();
+    toast('Saved ✓');
+  }
+
+  function renderMyCustomList(){
+    const custom = loadCustom();
+    const wrap = $('#myCustomList');
+    let count = 0;
+    const frag = document.createDocumentFragment();
+    for(const [cat, arr] of Object.entries(custom)){
+      arr.forEach((q, i)=>{
+        count++;
+        const div = document.createElement('div');
+        div.className = 'card-sm';
+        div.innerHTML = `<div class="kicker">${cat}</div><div style="font-weight:700; margin-top:6px">${q.q}</div>`;
+        frag.appendChild(div);
+      });
+    }
+    wrap.innerHTML = count ? '' : 'You have not added any custom questions yet.';
+    wrap.appendChild(frag);
+  }
+
+  function clearCustom(){
+    if(confirm('Delete all your custom questions?')){
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM);
+      renderCategories(); renderMyCustomList();
+    }
+  }
+
+  /***********************\n   * Misc Helpers
+  ************************/
+  function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr }
+
+  /***********************\n   * Event Listeners
+  ************************/
+  document.addEventListener('click', (e)=>{
+    if(e.target.matches('#btnHome')){ show('home'); renderCategories(); }
+    if(e.target.matches('#btnManage')){ show('manage'); renderManager(); }
+    if(e.target.matches('#btnLeaderboard')){ show('leaderboard'); renderLeaderboard(); }
+
+    if(e.target.matches('#categoryGrid .btn.primary')){
+      const cat = e.target.getAttribute('data-cat'); startQuiz(cat);
+    }
+
+    if(e.target.matches('#btnNext')) next();
+    if(e.target.matches('#btnPrev')) prev();
+    if(e.target.matches('#btnSkip')) skip();
+    if(e.target.matches('#btnFinish')) finishQuiz();
+
+    if(e.target.matches('#btnReview')){
+      const box = $('#reviewList'); box.hidden = !box.hidden;
+    }
+    if(e.target.matches('#btnRetry')){
+      if(state.category) startQuiz(state.category);
+    }
+
+    if(e.target.matches('#btnSaveScore')){
+      const name = $('#saveName').value.trim() || 'Player';
+      const entry = {
+        name,
+        category: state.category || '—',
+        score: state.score,
+        total: state.questions.length,
+        percent: percent(state.score, state.questions.length),
+        time: Math.max(0, DEFAULT_TIME - state.timeLeft),
+        date: Date.now()
+      };
+      addToLeaderboard(entry);
+      toast('Saved to leaderboard!');
+      renderLeaderboard();
+      show('leaderboard');
+    }
+
+    if(e.target.matches('#btnAddOption')) addOptionField();
+    if(e.target.matches('#btnClearCustom')) clearCustom();
+  });
+
+  $('#formAdd').addEventListener('submit', handleSaveQuestion);
+
+  // Init
+  renderCategories();
+  renderManager();
+  renderLeaderboard();
+  </script>
+</body>
+</html>
