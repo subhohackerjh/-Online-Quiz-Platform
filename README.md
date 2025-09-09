@@ -13,7 +13,7 @@ My platform makes knowledge assessment simple, engaging, and accessible.
 	•	For Businesses: Training employees, compliance testing, or running knowledge checks with leaderboards to motivate learning.
 	•	For Communities/Events: Hosting fun trivia or hackathon challenges to keep participants engaged.
 
-This versatility means our platform isn’t limited to one industry—it can serve EdTech, HR, corporate L&D, event management, and even consumer trivia markets.
+This versatility means my platform isn’t limited to one industry—it can serve EdTech, HR, corporate L&D, event management, and even consumer trivia markets.
 
 ⸻
 
