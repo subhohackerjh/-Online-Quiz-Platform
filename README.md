@@ -8,7 +8,7 @@ In today’s digital-first world, organizations, educators, and even individuals
 
 2. Value Proposition
 
-Our platform makes knowledge assessment simple, engaging, and accessible.
+My platform makes knowledge assessment simple, engaging, and accessible.
 	•	For Educators: Easy setup of quizzes for classrooms or online courses, automatic grading, and instant feedback.
 	•	For Businesses: Training employees, compliance testing, or running knowledge checks with leaderboards to motivate learning.
 	•	For Communities/Events: Hosting fun trivia or hackathon challenges to keep participants engaged.
