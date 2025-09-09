@@ -1,0 +1,29 @@
+
+Online Quiz Platform
+
+This website allows users to test their knowledge in different categories.
+
+Features:
+
+Enter your Player Name to start.
+
+Choose a category:
+
+General Knowledge
+
+Computer Science
+
+Cyber Security
+
+
+Each quiz has 3 questions with a time limit of 60 seconds.
+
+After completing the quiz, you can check:
+
+Total Score
+
+Accuracy
+
+Time Used
+
+
